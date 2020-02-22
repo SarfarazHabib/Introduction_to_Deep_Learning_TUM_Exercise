@@ -1,0 +1,9 @@
+### MAC ###
+.DS_Store
+
+### python ###
+.env
+*.pyc
+__pycache__
+.ipynb_checkpoints
+.python-version
