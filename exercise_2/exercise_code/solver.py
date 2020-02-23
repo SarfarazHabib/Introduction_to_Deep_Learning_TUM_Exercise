@@ -100,6 +100,7 @@ class Solver(object):
         - verbose: Boolean; if set to false then no output will be printed during
           training.
         """
+
         self.model = model
         self.X_train = data['X_train']
         self.y_train = data['y_train']
@@ -116,6 +117,8 @@ class Solver(object):
         self.print_every = kwargs.pop('print_every', 10)
         self.verbose = kwargs.pop('verbose', True)
 
+        self.is_regression = self.model.loss_function == 'l2' # Check if we have to use regression
+        
         # Throw an error if there are extra keyword arguments
         if len(kwargs) > 0:
             extra = ', '.join('"%s"' % k for k in list(kwargs.keys()))
@@ -201,6 +204,27 @@ class Solver(object):
         if N % batch_size != 0:
             num_batches += 1
         y_pred = []
+
+        """
+           If the loss function is l2 then it is a regression problem
+        """ 
+        is_regression = self.model.loss_function == 'l2'
+        
+        if is_regression :
+            """
+               This method checks if the task is regression and then, we would make use of MSE in order to evaluate
+            """
+            for i in range(num_batches):
+                start = i * batch_size
+                end = (i + 1) * batch_size
+                scores = self.model.loss(X[start:end])
+                y_pred.append(scores) # We just need to append whatever score is being returned
+            y_pred = np.vstack(y_pred)
+            self.is_regression = True # Let the solver know that it is a regression problem
+            acc = np.sqrt(np.square(np.subtract(y, y_pred)).mean())
+            return acc
+
+
         for i in range(num_batches):
             start = i * batch_size
             end = (i + 1) * batch_size
@@ -259,3 +283,20 @@ class Solver(object):
 
         # At the end of training swap the best params into the model
         self.model.params = self.best_params
+
+    def update_accuracy(self, val_acc, is_regression=False):
+
+        if is_regression:
+            # This section is specific to the regression issues
+            if val_acc < self.best_val_acc:
+                self.best_val_acc = val_acc
+                self.best_params = {}
+                for k, v in self.model.params.items():
+                    self.best_params[k] = v.copy()
+        else:
+            # This section will have the classification code section
+            if val_acc > self.best_val_acc:
+                self.best_val_acc = val_acc
+                self.best_params = {}
+                for k, v in self.model.params.items():
+                    self.best_params[k] = v.copy()

@@ -143,6 +143,8 @@ def softmax_hyperparameter_tuning(X_train, y_train, X_val, y_val):
     ############################################################################
     for lr in learning_rates:
         for rs in regularization_strengths:
+            print("**********************************")
+            print("lr: %.7f, reg: %.1f" %(lr, rs))
             classifier = SoftmaxClassifier()
             loss = classifier.train(X_train, y_train, learning_rate=lr, reg=rs,
                           num_iters=2000, verbose=False)
