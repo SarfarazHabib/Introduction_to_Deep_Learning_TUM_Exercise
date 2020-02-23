@@ -53,55 +53,16 @@ class ClassificationCNN(nn.Module):
         # will not coincide with the Jupyter notebook cell.                    #
         ########################################################################
         
-        #padding_same_1 = ((height - 1) * stride_conv + kernel_size - height) // 2
-        #self.conv1 = nn.Conv2d(in_channels=channels,out_channels=num_filters,kernel_size=kernel_size,stride=stride_conv,padding=padding_same_1)
-        #self.conv1.weight.data.mul_(weight_scale)
-        #self.pool1 = nn.MaxPool2d(kernel_size=pool,stride=stride_pool)
-        #ouput_size_1 = height // pool
-
-        #padding_same_2 = ((ouput_size_1 - 1) * stride_conv + kernel_size - ouput_size_1) // 2
-        #self.conv2 = nn.Conv2d(in_channels=num_filters,out_channels=2*num_filters,kernel_size=kernel_size,stride=stride_conv,padding=padding_same_2)
-        #self.conv2.weight.data.mul_(weight_scale)
-        #self.pool2 = nn.MaxPool2d(kernel_size=pool,stride=stride_pool)
-        #ouput_size_2 = ouput_size_1 // pool
-
-        #padding_same_3 = ((ouput_size_2 - 1) * stride_conv + kernel_size - ouput_size_2) // 2
-        #self.conv3 = nn.Conv2d(in_channels=2*num_filters,out_channels=4*num_filters,kernel_size=kernel_size,stride=stride_conv,padding=padding_same_3)
-        #self.conv3.weight.data.mul_(weight_scale)
-        #self.pool3 = nn.MaxPool2d(kernel_size=pool,stride=stride_pool)
-        #ouput_size_3 = ouput_size_2 // pool
-
-        
-        #self.dropout = nn.Dropout(p=dropout)
-
-        #self.fc1 = nn.Linear((2 * num_filters) * ouput_size_1 * ouput_size_1, hidden_dim)
-        #self.fc2 = nn.Linear(hidden_dim, hidden_dim)
-        #self.fc3 = nn.Linear(hidden_dim, num_classes)
-
         padding_1 = ((height - 1) * stride_conv + kernel_size - height) // 2
         self.conv1 = nn.Conv2d(channels, num_filters, kernel_size, stride=stride_conv, padding=padding_1)
         self.conv1.weight.data.mul_(weight_scale)
         self.pool1 = nn.MaxPool2d(pool, stride_pool)
         feat_size_1 = height // pool
 
-        #padding_2 = ((feat_size_1 - 1) * stride_conv + kernel_size - feat_size_1) // 2
-        #self.conv2 = nn.Conv2d(num_filters, 2 * num_filters, kernel_size, stride=stride_conv, padding=padding_2)
-        #self.conv2.weight.data.mul_(weight_scale)
-        #self.pool2 = nn.MaxPool2d(pool, stride_pool)
-        #feat_size_2 = feat_size_1 // pool
-
-        #padding_3 = ((feat_size_2 - 1) * stride_conv + kernel_size - feat_size_2) // 2
-        #self.conv3 = nn.Conv2d(2 * num_filters, 4 * num_filters, kernel_size, stride=stride_conv, padding=padding_2)
-        #self.conv3.weight.data.mul_(weight_scale)
-        #self.pool3 = nn.MaxPool2d(pool, stride_pool)
-        #feat_size_3 = feat_size_2 // pool
-        
-        
-
         self.fc1 = nn.Linear(num_filters * feat_size_1 * feat_size_1, hidden_dim)
 
         self.dropout = nn.Dropout(p=dropout)
-        #self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        
         self.fc2 = nn.Linear(hidden_dim, num_classes)
         ############################################################################
         #                             END OF YOUR CODE                             #
