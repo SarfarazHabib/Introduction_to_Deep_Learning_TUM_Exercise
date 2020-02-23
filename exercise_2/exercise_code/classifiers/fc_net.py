@@ -4,6 +4,49 @@ from exercise_code.layers import *
 from exercise_code.layer_utils import *
 
 
+def affine_relu_norm_forward(x, w, b, gamma, beta, bn_param):
+    """
+    Convenience layer that perorms an affine transform with batch normalization
+    followed by a ReLU
+    Inputs:
+    - x: Input to the affine layer
+    - w, b: Weights for the affine layer
+    - gamma, beta, bn_param: params for batch normalization
+    Returns a tuple of:
+    - out: Output from the ReLU
+    - cache: Object to give to the backward pass
+    """
+    a, fc_cache = affine_forward(x, w, b)
+    a_norm, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
+    out, relu_cache = relu_forward(a_norm)
+    cache = (fc_cache, relu_cache, bn_cache)
+    return out, cache
+
+def affine_relu_norm_backward(dout, cache):
+    """
+    Backward pass for the affine-relu convenience layer with batch normalization
+    """
+    fc_cache, relu_cache, bn_cache = cache
+    da = relu_backward(dout, relu_cache)
+    da_norm, dgamma, dbeta = batchnorm_backward(da, bn_cache)
+    dx, dw, db = affine_backward(da_norm, fc_cache)
+    return dx, dw, db, dgamma, dbeta
+
+def relu_dropout_forward(x, dropout_param):
+    """
+    Convenience layer that perorms a dropout after a ReLU
+    Inputs:
+    - x: input to dropout
+    - cache: input cache
+    - dropout_param
+    Returns a tuple of:
+    - out: Output from the dropout
+    - cache: Object to give to the backward pass
+    """
+    out, cache = dropout_forward(x, dropout_param)
+
+    return out, cache
+
 class TwoLayerNet(object):
     """
     A two-layer fully-connected neural network with ReLU nonlinearity and
@@ -21,7 +64,7 @@ class TwoLayerNet(object):
     """
 
     def __init__(self, input_dim=3 * 32 * 32, hidden_dim=100, num_classes=10,
-                 weight_scale=1e-3, reg=0.0):
+                 weight_scale=1e-3, reg=0.0,loss_function='softmax'):
         """
         Initialize a new network.
     
@@ -36,6 +79,10 @@ class TwoLayerNet(object):
         """
         self.params = {}
         self.reg = reg
+        if loss_function != 'softmax':
+            raise Exception('Wrong loss function')
+        else:
+            self.loss_function = 'softmax'
 
         ############################################################################
         # TODO: Initialize the weights and biases of the two-layer net. Weights    #
@@ -101,8 +148,8 @@ class TwoLayerNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         loss, dscores = softmax_loss(scores, y)
-        loss += 0.5 * self.reg * (np.sum(self.params['W1'] ** 2) + np.sum(self.params['W2'] ** 2))
-
+        loss += 0.5 * self.reg * (np.sum(self.params['W1'] ** 2))
+        loss += 0.5 * self.reg * (np.sum(self.params['W2'] ** 2))
         dx_a_2, grads['W2'], grads['b2'] = affine_backward(dscores, a_2_cache)
         dx_relu = relu_backward(dx_a_2, relu_cache)
         _, grads['W1'], grads['b1'] = affine_backward(dx_relu, a_1_cache)
@@ -134,7 +181,7 @@ class FullyConnectedNet(object):
 
     def __init__(self, hidden_dims, input_dim=3 * 32 * 32, num_classes=10,
                  dropout=0, use_batchnorm=False, reg=0.0,
-                 weight_scale=1e-2, dtype=np.float32, seed=None):
+                 weight_scale=1e-2, dtype=np.float32, seed=None,loss_function='softmax'):
         """
         Initialize a new FullyConnectedNet.
         
@@ -161,6 +208,13 @@ class FullyConnectedNet(object):
         self.num_layers = 1 + len(hidden_dims)
         self.dtype = dtype
         self.params = {}
+        self.loss_function = loss_function
+        if loss_function == 'softmax':
+            self.chosen_loss_function = softmax_loss
+        elif loss_function == 'l2':
+            self.chosen_loss_function = l2_loss
+        else:
+            raise Exception('Wrong loss function')        
 
         ############################################################################
         # TODO: Initialize the parameters of the network, storing all values in    #
@@ -176,10 +230,12 @@ class FullyConnectedNet(object):
         ############################################################################
         W_list = ['W'+str(i+1) for i in range(self.num_layers)]
         b_list = ['b'+str(i+1) for i in range(self.num_layers)]
+        
         if self.use_batchnorm:
             gamma_list = ['gamma'+str(i+1) for i in range(self.num_layers-1)]
             beta_list = ['beta'+str(i+1) for i in range(self.num_layers-1)]
         dims = [input_dim] + hidden_dims + [num_classes]
+        
         for i in range(self.num_layers):
             self.params[W_list[i]] = np.random.normal(scale=weight_scale, size=(dims[i], dims[i+1]))
             self.params[b_list[i]] = np.zeros(dims[i+1])
